@@ -1,4 +1,5 @@
 import cv2
+import logging
 import pydicom
 import copy as cp
 import pandas as pd
@@ -34,12 +35,14 @@ def load_images():
     global directory
     global filename
     val_corte = 0
-    #directory = "imagenes_dicom/0-27993/"
-    #filename = "000000.dcm"
-    #imageDICOM = pydicom.dcmread(directory+filename)
     directory = "imagenes_dicom/"
-    filename = "40826324_s1_CT_FB_masked.dcm"
-    imageDICOM = pydicom.read_file(directory+filename)
+    filename = filedialog.askopenfilename(initialdir=directory,title = "Select file")
+    #filename = "000000.dcm"
+    logging.info("Se ha cargado el archivo DICOM en "+str(filename))
+    imageDICOM = pydicom.dcmread(filename)
+    #directory = "imagenes_dicom/"
+    #filename = "40826324_s1_CT_FB_masked.dcm"
+    #imageDICOM = pydicom.read_file(directory+filename)
     # directory = "imagenes_dicom/"
     # filename = "PMD8540804318002412548_s04_T1_REST_Frame_1__PCARDM1.dcm"
     # imageDICOM = pydicom.read_file(directory+filename)
@@ -63,24 +66,31 @@ def quit():
 
 def view_DICOM_headers():
     global tree
+    global filename
+    global imageDICOM
+    global names
+    global values
+    global firstView
     ventanaH = Tk()
     ventanaH.resizable(0, 0)
     ventanaH.title("Cabeceras DICOM")
     ventanaH.geometry("1000x640")
     ventanaH.configure(background=colorFondo)
     column_names = ["name","value"]
-    names = []
-    values = []
-    imageDICOM = pydicom.dcmread(directory+filename)
+    #imageDICOM = pydicom.dcmread(filename)
+    logging.info("Se han consultado las cabecaras DICOM del archivo "+str(filename))
     df = pd.DataFrame(columns=column_names)
-    for v in imageDICOM.values():
-        if isinstance(v, pydicom.dataelem.RawDataElement):
-            values.append(pydicom.dataelem.DataElement_from_raw(v).value)
-        else:
-            values.append(v)
-
-    for n in imageDICOM:
-        names.append(n.name)
+    if firstView == True:
+        firstView = False
+        names = []
+        values = []
+        for v in imageDICOM.values():
+            if type(v) == pydicom.dataelem.RawDataElement:
+                values.append(pydicom.dataelem.DataElement_from_raw(v).value)
+            else:
+                values.append(v)
+        for n in imageDICOM:
+            names.append(n.name)
     #print(len(names))
     df.insert(0,"name",names,allow_duplicates=True)
     df.insert(1,"value",values,allow_duplicates=True)
@@ -128,11 +138,12 @@ def callback(event):
 
 
 def createViewerInterface():
+    global firstView
     global ventanaV
     global fig
     global frame
     ventanaV = Tk()
-
+    firstView = True
     ventanaV.resizable(0, 0)
     ventanaV.title("Practica 1")
     ventanaV.geometry("1280x720")
@@ -206,6 +217,8 @@ def createViewerInterface():
     mainloop()
 
 def createMainInterface():
+    logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s - %(message)s', level=logging.INFO)
+    logging.info("Se ha iniciado una nueva sesión")
     colorFondo = "#000040"
     ventana = Tk()
     ventana.resizable(0, 0)
@@ -246,7 +259,7 @@ def ajustarContraste(val):
     # print("newmin: "+str(newmin))
     imageC[:,:] = (((newmax - newmin) * ((image[:,:] - min_act) / (max_act - min_act))) + newmin)
     # print(imageC[196][260])
-
+    logging.info("Se ha ajustado el contraste a un valor alpha "+str(alpha))
     w = imageC.shape[0]
     h = imageC.shape[1]
     plt.imshow(imageC,cmap=plt.cm.bone)  # later use a.set_data(new_data)
@@ -265,6 +278,7 @@ def ajustarContraste(val):
 def cambiarCorte(valor):
     global val_corte
     global image
+    global filename
     global directory
     # print(imageDICOM.pixel_array.shape)
     if len(imageDICOM.pixel_array.shape) > 2:
@@ -279,7 +293,7 @@ def cambiarCorte(valor):
         imagep = imageDICOM.pixel_array[val_corte]
         image = cp.deepcopy(imagep)
     else:
-        if directory == "imagenes_dicom/0-27993/":
+        if "imagenes_dicom/0-27993/" in filename:
             if valor == -1: #anterior corte
                 val_corte -= 1
                 if val_corte < 0:
@@ -289,15 +303,15 @@ def cambiarCorte(valor):
                 if val_corte > 117:
                     val_corte = 0
             cont = 0
-            for filename in os.listdir(directory):
-                #print(filename)
-                imageDICOMp = pydicom.dcmread(directory+filename)
+            directory = "imagenes_dicom/0-27993/"
+            for fname in os.listdir(directory):
+                imageDICOMp = pydicom.dcmread(directory+fname)
                 if cont == val_corte:
                     break
                 cont += 1
             imagep = imageDICOMp.pixel_array
             image = cp.deepcopy(imagep)
-
+    logging.info("Se ha cambiado de corte. Actualmente se visualiza el corte nº "+str(val_corte+1))
     plt.imshow(image, cmap=plt.cm.bone)  # later use a.set_data(new_data)
     plt.gca().set_axis_off()
     plt.margins(0, 0)
