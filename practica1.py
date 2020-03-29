@@ -121,6 +121,53 @@ def callback(event):
     global row
     global col
     global val
+    global dist
+    global medirLong
+    global r1,r2,c1,c2
+
+    if medirLong == True:
+        if dist == 0:
+            r1 = h - event.y
+            c1 = event.x
+            canvas.get_tk_widget().create_oval(event.x - 5, h - event.y - 5, event.x + 5, h - event.y + 5, width=3,
+                                               outline="green", tag="oval1")
+            dist += 1
+
+            Label(ventanaV, text=r1).place(x=180, y=160)
+
+            Label(ventanaV, text=c1).place(x=180, y=180)
+        elif dist == 1:
+            r2 = h - event.y
+            c2 = event.x
+            canvas.get_tk_widget().create_oval(event.x - 5, h - event.y - 5, event.x + 5, h - event.y + 5, width=3,
+                                               outline="green", tag="oval2")
+            dist += 1
+
+            Label(ventanaV, text=r2).place(x=180, y=240)
+
+            Label(ventanaV, text=c2).place(x=180, y=260)
+            rt = r2 - r1
+            ct = c2 - c1
+            d = np.hypot(rt,ct)
+            d = np.round(d,decimals=3)
+
+            Label(ventanaV, text=d).place(x=180, y=300)
+        else:
+            dist = 0
+            canvas.get_tk_widget().delete("oval1")
+            canvas.get_tk_widget().delete("oval2")
+            Label(ventanaV, text="                            ", bg=colorFondo,
+                  fg=colorLletra).place(x=180, y=160)
+            Label(ventanaV, text="                            ", bg=colorFondo,
+                  fg=colorLletra).place(x=180, y=180)
+            Label(ventanaV, text="                            ", bg=colorFondo,
+                  fg=colorLletra).place(x=180, y=240)
+            Label(ventanaV, text="                            ", bg=colorFondo,
+                  fg=colorLletra).place(x=180, y=260)
+            Label(ventanaV, text="             ", bg=colorFondo).place(x=180, y=300)
+
+    else:
+        dist = 0
 
     val = image[h-event.y][event.x]
     row = h-event.y
@@ -135,6 +182,194 @@ def callback(event):
 
     Label(ventanaV,text=val).place(x=1100,y=110)
 
+def activarMedLong():
+    global medirLong
+    if medirLong == True:
+        Label(ventanaV, text="                    ", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=160)
+        Label(ventanaV, text="                    ", bg=colorFondo,
+              fg=colorLletra).place(x=180, y=160)
+
+        Label(ventanaV, text="                            ", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=180)
+        Label(ventanaV, text="                            ", bg=colorFondo,
+              fg=colorLletra).place(x=180, y=180)
+
+        Label(ventanaV, text="                    ", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=240)
+        Label(ventanaV, text="                    ", bg=colorFondo,
+              fg=colorLletra).place(x=180, y=240)
+
+        Label(ventanaV, text="                            ", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=260)
+        Label(ventanaV, text="                            ", bg=colorFondo,
+              fg=colorLletra).place(x=180, y=260)
+        Label(ventanaV, text="                                               ", bg=colorFondo,
+              fg=colorLletra).place(x=60, y=300)
+        Label(ventanaV, text="                          ", bg=colorFondo).place(x=180, y=300)
+        medirLong = False
+    else:
+        medirLong = True
+        Label(ventanaV, text="Fila pixel 1", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=160)
+
+        Label(ventanaV, text="Columna pixel 1", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=180)
+        Label(ventanaV, text="Fila pixel 2", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=240)
+        Label(ventanaV, text="Columna pixel 2", bg=colorFondo,
+              fg=colorLletra).place(x=80, y=260)
+        Label(ventanaV, text="Longitud entre pixeles", bg=colorFondo,
+              fg=colorLletra).place(x=60, y=300)
+
+def cambiarCorte3V(valor,corte):
+    global val_corteA
+    global val_corteS
+    global val_corteC
+    global corteA
+    global oorteC
+    global corteS
+    global image
+    global filename
+    global directory
+    # print(imageDICOM.pixel_array.shape)
+
+    if valor == -1: #anterior corte
+        if corte == 0:
+            val_corteA -= 1
+            if val_corteA < 0:
+                val_corteA = imageF.shape[0] - 1
+        elif corte == 1:
+            val_corteC -= 1
+            if val_corteC < 0:
+                val_corteC = imageF.shape[1] - 1
+        else:
+            val_corteS -= 1
+            if val_corteS < 0:
+                val_corteS = imageF.shape[2] - 1
+    else: #siguiente corte
+        if corte == 0:
+            val_corteA += 1
+            if val_corteA > imageF.shape[0]:
+                val_corteA = 0
+        elif corte == 1:
+            val_corteC += 1
+            if val_corteC > imageF.shape[1]:
+                val_corteC = 0
+        else:
+            val_corteS += 1
+            if val_corteS > imageF.shape[2]:
+                val_corteS = 0
+    corteA = imageF[val_corteA, :, :]
+    corteC = imageF[:, val_corteC, :]
+    corteS = imageF[:, :, val_corteS]
+    my_dpi = 100
+    pixel_len_mm = [imageDICOM.SliceThickness, imageDICOM.PixelSpacing[0],
+                    imageDICOM.PixelSpacing[1]]  # slice thickness, pixel spacing 0 1
+    plt.subplot(2, 2, 1)  # axial
+    plt.imshow(corteA, cmap=plt.cm.get_cmap('bone'), aspect=pixel_len_mm[1] / pixel_len_mm[2])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+    plt.subplot(2, 2, 2)  # coronal
+    plt.imshow(corteC, cmap=plt.cm.get_cmap('bone'), aspect=pixel_len_mm[0] / pixel_len_mm[2])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+    plt.subplot(2, 2, 3)  # sagital
+    plt.imshow(corteS, cmap=plt.cm.get_cmap('bone'), aspect=pixel_len_mm[0] / pixel_len_mm[1])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+
+
+    canvas3V.figure = fig3
+    canvas3V.draw()
+    frame3.pack(side=TOP, fill=X)
+    canvas.get_tk_widget().pack(side=TOP, expand=1)
+
+def ver3Cortes():
+    global fig3
+    global frame3
+    global ventana3V
+    global canvas3V #canvas para los 3 cortes
+    global canvasA #axial
+    global canvasS #sagital
+    global canvasC #coronal
+    global val_corteA
+    global val_corteS
+    global val_corteC
+    ventana3V = Tk()
+    ventana3V.resizable(0, 0)
+    ventana3V.title("Visualizador por cortes")
+    ventana3V.geometry("1280x720")
+    ventana3V.configure(background=colorFondo)
+    my_dpi = 100
+    val_corteA = 0
+    val_corteS = 0
+    val_corteC = 0
+    global imageF
+    global corteA
+    global corteS
+    global corteC
+    imageF = np.flip(imageDICOM.pixel_array,axis=0)
+    corteA = imageF[val_corteA,:,:]
+    corteC = imageF[:,val_corteC,:]
+    corteS = imageF[:,:,val_corteS]
+    fig3 = plt.figure(figsize=(600/my_dpi, 600/my_dpi), dpi=my_dpi, facecolor=colorFondo)
+    pixel_len_mm = [imageDICOM.SliceThickness, imageDICOM.PixelSpacing[0], imageDICOM.PixelSpacing[1]] #slice thickness, pixel spacing 0 1
+    plt.subplot(2, 2, 1) #axial
+    plt.imshow(corteA, cmap=plt.cm.get_cmap('bone'),aspect=pixel_len_mm[1]/pixel_len_mm[2])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+    plt.subplot(2, 2, 2) #coronal
+    plt.imshow(corteC, cmap=plt.cm.get_cmap('bone'),aspect=pixel_len_mm[0]/pixel_len_mm[2])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+    plt.subplot(2, 2, 3) #sagital
+    plt.imshow(corteS, cmap=plt.cm.get_cmap('bone'),aspect=pixel_len_mm[0]/pixel_len_mm[1])
+    plt.gca().set_axis_off()
+    plt.margins(0, 0)
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0,
+                        hspace=0, wspace=1)
+
+    frame3 = Frame(ventana3V)
+
+    canvas3V = FigureCanvasTkAgg(fig3, master=ventana3V)
+    canvas3V.draw()
+    frame3.pack(side=TOP, fill=X)
+    canvas3V.get_tk_widget().pack(side=TOP, expand=1)
+
+    toolbar = NavigationToolbar2Tk(canvas3V, frame3)
+    toolbar.config(background=colorFondo)
+    toolbar._message_label.config(background=colorFondo)
+    toolbar.update()
+
+    lArrow = PhotoImage(file="igu_data/left_arrow.png", master=ventana3V)
+    rArrow = PhotoImage(file="igu_data/right_arrow.png", master=ventana3V)
+    #axial
+    Label(ventana3V, text="Cambiar corte axial", bg="#000000", fg="white").place(x=1150,y=70)
+    Button(ventana3V, width=40, height=40, image=lArrow, command=lambda: cambiarCorte3V(-1,0), fg="white").place(x=1150, y=100)
+    Button(ventana3V, width=40, height=40, image=rArrow, command=lambda: cambiarCorte3V(1,0), fg="white").place(x=1200, y=100)
+    #coronal
+    Label(ventana3V, text="Cambiar corte coronal", bg="#000000", fg="white").place(x=1150,y=170)
+    Button(ventana3V, width=40, height=40, image=lArrow, command=lambda: cambiarCorte3V(-1,1), fg="white").place(x=1150, y=200)
+    Button(ventana3V, width=40, height=40, image=rArrow, command=lambda: cambiarCorte3V(1,1), fg="white").place(x=1200, y=200)
+    #sagital
+    Label(ventana3V, text="Cambiar corte sagital", bg="#000000", fg="white").place(x=1150,y=270)
+    Button(ventana3V, width=40, height=40, image=lArrow, command=lambda: cambiarCorte3V(-1,2), fg="white").place(x=1150, y=300)
+    Button(ventana3V, width=40, height=40, image=rArrow, command=lambda: cambiarCorte3V(1,2), fg="white").place(x=1200, y=300)
+
+    mainloop()
+
+
 
 
 def createViewerInterface():
@@ -142,6 +377,10 @@ def createViewerInterface():
     global ventanaV
     global fig
     global frame
+    global dist
+    global medirLong
+    dist = 0
+    medirLong = False
     ventanaV = Tk()
     firstView = True
     ventanaV.resizable(0, 0)
@@ -206,7 +445,10 @@ def createViewerInterface():
     scale.set(50)
     Label(ventanaV, text="Ajustar contraste", bg="#000000", fg="white").place(x=1000, y=220)
 
-    Button(ventanaV, text="Ver cabecera DICOM", command=view_DICOM_headers, bg="#000000", fg="white").place(x=470, y=20)
+    Button(ventanaV, text="Medir longitud entre dos píxeles", command=activarMedLong, bg="#000000", fg="white").place(x=100, y=100)
+
+    Button(ventanaV, text="Ver cabeceras DICOM", command=view_DICOM_headers, bg="#000000", fg="white").place(x=470, y=20)
+    Button(ventanaV, text="Visualizar diferentes cortes (3D)", command=ver3Cortes, bg="#000000", fg="white").place(x=1000, y=300)
     Button(ventanaV, text="Salir", command=quit, bg="#000000", fg="white").place(x=780, y=20)
 
     lArrow = PhotoImage(file="igu_data/left_arrow.png", master=ventanaV)
@@ -219,6 +461,8 @@ def createViewerInterface():
 def createMainInterface():
     logging.basicConfig(filename='app.log', filemode='w', format='%(asctime)s - %(message)s', level=logging.INFO)
     logging.info("Se ha iniciado una nueva sesión")
+    global filename
+    filename = ""
     colorFondo = "#000040"
     ventana = Tk()
     ventana.resizable(0, 0)
